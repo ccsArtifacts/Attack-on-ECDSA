@@ -1,12 +1,18 @@
-Elliptic Curve Cryptography (ECDSA) and MSB Attack
-ECDSA is widely used to secure blockchain transactions, encrypted communications, and many other applications. But did you know that poor nonce 
-𝑘 management can compromise the private key?
+# attack-on-ecdsa
 
-I developed a Rust project that implements an attack exploiting the MSB of 𝑘, allowing private key recovery via lattice reduction (LLL).
-How does it work?
-ECDSA relies on a random nonce 𝑘. If part of 𝑘's bits leak (e.g., via a side-channel attack), a linear system can be formulated. Lattice reduction is then used to recover the private key.
+Educational Rust crate demonstrating classical attacks against ECDSA
+when cryptographic assumptions are violated (e.g. nonce reuse).
 
-🛠️ Project Structure:
-✅ Keygen module: ECDSA key generation
-✅ Signature module: Signing with MSB leakage
-✅ Break_ecdsa module: Attack and private key recovery
+## ⚠️ Disclaimer
+This crate is for educational and research purposes only.
+Do NOT use in production systems.
+
+## Features
+- ECDSA key generation
+- Signature simulation
+- Private key recovery attacks
+
+## Example
+
+'''rust 
+use attack_on_ecdsa::break_ecdsa::recover_private_key;
