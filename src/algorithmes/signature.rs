@@ -1,24 +1,35 @@
-use secp256k1::{Secp256k1, SecretKey, Message};
-use sha2::{Sha256, Digest};
 use rug::Integer;
-use rand::Rng;
+use rug::integer::Order;
+use secp256k1::{All, Message, Secp256k1, SecretKey};
+use sha2::{Digest, Sha256};
 
-/// Message signature with MSB leakage from k
-pub fn sign_message(secp: &Secp256k1, sk: &SecretKey, message: &[u8], msb: usize) -> (u64, Integer, Integer, Integer) {
-    let mut rng = rand::thread_rng();
-    let k: u64 = rng.gen_range(1..(1 << 256)); // Génère k aléatoire
-
-    let k_bin = format!("{:b}", k);
-    let leaked_k = &k_bin[..msb]; // MSB recovery
-
+/// Signs a message and simulates MSB leakage of the nonce.
+///
+/// ⚠️ Educational only – nonce leakage is simulated.
+pub fn sign_message(
+    secp: &Secp256k1<All>,
+    sk: &SecretKey,
+    message: &[u8],
+    msb: usize,
+) -> (u64, Integer, Integer, Integer) {
     let hash = Sha256::digest(message);
-    let msg = Message::from_slice(&hash).expect("Message invalide");
+    let digest: [u8; 32] = hash.into();
+
+    let msg = Message::from_digest(digest);
     let sig = secp.sign_ecdsa(&msg, sk);
 
-    let (r, s) = match sig.serialize_der().split_last() {
-        Some((s, r)) => (Integer::from_digits(r, rug::integer::Order::MsfBe), Integer::from(*s)),
-        None => panic!("Erreur de signature"),
-    };
+    let compact = sig.serialize_compact();
+    let r = Integer::from_digits(&compact[0..32], Order::MsfBe);
+    let s = Integer::from_digits(&compact[32..64], Order::MsfBe);
+    let h = Integer::from_digits(&digest, Order::MsfBe);
 
-    (leaked_k.parse::<u64>().unwrap(), Integer::from(hash.as_slice()), r, s)
+    let mut k_sim = u64::from_be_bytes(digest[0..8].try_into().unwrap());
+    if k_sim == 0 {
+        k_sim = 1;
+    }
+
+    let take = msb.min(64);
+    let k_msb = if take == 0 { 0 } else { k_sim >> (64 - take) };
+
+    (k_msb, h, r, s)
 }
