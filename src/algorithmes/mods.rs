@@ -3,5 +3,5 @@
 //! ⚠️ For research and educational purposes only.
 
 pub mod breaking_ecdsa;
-pub mod key_gen;
+pub mod key_Gen;
 pub mod signature;
